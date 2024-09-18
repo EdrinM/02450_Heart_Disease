@@ -71,10 +71,10 @@ for i in range(178):
     else:
         ax.scatter3D(Z[i,0], Z[i,1], Z[i,2], color = "blue")
 
-plt.title("Wine origen: PCA")
+plt.title("Wine origen: PCA 3D")
 ax.set_xlabel('PC1')
-ax.set_xlabel('PC2')
-ax.set_xlabel('PC3')
+ax.set_ylabel('PC2')
+ax.set_zlabel('PC3')
 
 legend_elements = [
     Line2D([0], [0], marker='o', color='w', markerfacecolor='green', markersize=10, label='winery 1'),
