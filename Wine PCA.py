@@ -1,6 +1,6 @@
 import numpy as np
 #Dataset is the full data including the classification label in the first column
-dataset = np.loadtxt(r"C:\Users\spill\Downloads\wine\wine.data", delimiter=',',dtype=float)
+dataset = np.loadtxt(r".\Dataset\wine.data", delimiter=',',dtype=float)
 
 # X is the actual data without the classification label
 X = (dataset[:,1:]).copy()
