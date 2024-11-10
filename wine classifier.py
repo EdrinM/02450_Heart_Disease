@@ -76,6 +76,7 @@ for outer_k, (train_index, test_index) in enumerate(outer_cv.split(X)):
     y_test_pred = best_model.predict(X_test_outer)
     misclass_rate_test = np.mean(y_test_pred != y_test_outer)
     outer_errors.append(misclass_rate_test)
+    print(f"Error of best lambda for outer fold: {misclass_rate_test}")
 
 # Average misclassification rate across all outer folds
 average_error = np.mean(outer_errors)
@@ -83,8 +84,6 @@ print("Nested CV average test misclassification rate for logistic regression:", 
 
 #Displaying the results from logistic regression with variable lambda
 f = figure()
-print("lambda_interval",lambda_interval)
-print("inner_errors_test",inner_errors_test)
 semilogx(lambda_interval, inner_errors_test * 100, label="Error_test")
 semilogx(lambda_interval, inner_errors_train * 100, label="Error_train")
 xlabel("Regularization (Lambda)")
@@ -151,6 +150,7 @@ for outer_k, (train_index, test_index) in enumerate(outer_cv.split(X)):
     y_test_pred = best_model.predict(X_test_outer)
     misclass_rate_test = np.mean(y_test_pred != y_test_outer)
     outer_errors.append(misclass_rate_test)
+    print(f"Error of best K-neighbor for outer fold: {misclass_rate_test}")
 
 # Average misclassification rate across all outer folds
 average_error = np.mean(outer_errors)
@@ -158,8 +158,6 @@ print("Nested CV average test misclassification rate for K-nearst-neighbor:", av
 
 #Displaying the results from logistic regression with variable lambda
 f = figure()
-print("K_neighbor_interval",K_neighbor_interval)
-print("inner_errors_test",inner_errors_test)
 plot(K_neighbor_interval, inner_errors_test * 100, label="Error_test")
 plot(K_neighbor_interval, inner_errors_train * 100, label="Error_train")
 xlabel("Regularization (number of neighbors)")
@@ -216,7 +214,7 @@ for outer_k, (train_index, test_index) in enumerate(outer_cv.split(X)):
     # Select best lambda (smallest error in inner CV)
     best_lambda_index = np.argmin(inner_errors_test)
     best_lambda = K_neighbor_interval[best_lambda_index]
-    print(f"Best K-neighbor for outer fold {outer_k + 1}: {best_lambda}")
+    print(f"Best dummy for outer fold {outer_k + 1}: {best_lambda}")
 
     # Train model on entire outer training set with best lambda
     best_model = dum.DummyClassifier()
@@ -225,6 +223,8 @@ for outer_k, (train_index, test_index) in enumerate(outer_cv.split(X)):
     # Evaluate model on outer test set
     y_test_pred = best_model.predict(X_test_outer)
     misclass_rate_test = np.mean(y_test_pred != y_test_outer)
+    print(f"Error of best dummy for outer fold: {misclass_rate_test}")
+
     outer_errors.append(misclass_rate_test)
 
 # Average misclassification rate across all outer folds
@@ -233,18 +233,52 @@ print("Nested CV average test misclassification rate for K-nearst-neighbor:", av
 
 #Displaying the results from logistic regression with variable lambda
 f = figure()
-print("K_neighbor_interval",K_neighbor_interval)
-print("inner_errors_test",inner_errors_test)
 plot(K_neighbor_interval, inner_errors_test * 100, label="Error_test")
 plot(K_neighbor_interval, inner_errors_train * 100, label="Error_train")
 xlabel("No regularization (its a dummy)")
 ylabel("Error in % (misclassification rate, CV K={0})".format(inner_K))
 legend() 
 show()
-#Here is the final model selected by all the code below
+
+#Preforming the McNiemar test
+K = 10
+n11, n12, n21, n22 = 0, 0, 0, 0
+
+
+for i in range(K):
+    CV = model_selection.KFold(n_splits=K, shuffle=True)
+    for train_index, test_index in CV.split(X):
+        X_train, y_train = X[train_index, :], y[train_index]
+        X_test, y_test = X[test_index, :], y[test_index]
+        mu, sigma = np.mean(X_train, 0), np.std(X_train, 0)
+        X_train = (X_train - mu) / sigma
+        X_test = (X_test - mu) / sigma
+        KneighborModel = Knb.KNeighborsClassifier(n_neighbors= 31)
+        LogRegModel = lm.LogisticRegression(C=1 / 3.2)
+        KneighborModel.fit(X_train,y_train)
+        LogRegModel.fit(X_train,y_train)
+        y_est_LogReg = LogRegModel.predict(X_test)
+        y_est_KneighborModel = KneighborModel.predict(X_test)
+        for log_pred, knn_pred, true_label in zip(y_est_LogReg, y_est_KneighborModel, y_test):
+            if log_pred == true_label and knn_pred == true_label:
+                n11 += 1  # Both correct
+            elif log_pred == true_label and knn_pred != true_label:
+                n12 += 1  # A correct, B wrong
+            elif log_pred != true_label and knn_pred == true_label:
+                n21 += 1  # A wrong, B correct
+            elif log_pred != true_label and knn_pred != true_label:
+                n22 += 1  # Both wrong
+        
+
+import scipy.stats as stat
+print(n12,n21)
+p_value=2*stat.binom.cdf(k=min(n12,n21),n=n12+n21,p=(1/2))
+  
+print(p_value)
+#Here is the final model selected
 #I wish to see the weights
 
-mdl = lm.LogisticRegression(C=1 / 5.2)
+mdl = lm.LogisticRegression(C=1 / 3.2)
 mu, sigma = np.mean(X, 0), np.std(X, 0)
 X_final = (X - mu) / sigma
 mdl.fit(X_final, y)
