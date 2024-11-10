@@ -6,7 +6,7 @@ from matplotlib.pylab import figure, legend, show, xlabel, ylabel, semilogx, plo
 from sklearn import model_selection
 
 #Dataset is the full data including the classification label in the first column
-dataset = np.loadtxt(r"C:\Users\spill\Downloads\wine\wine.data", delimiter=',',dtype=float)
+dataset = np.loadtxt(r".\Dataset\wine.data", delimiter=',',dtype=float)
 X = (dataset[:,1:]).copy() # the chemical attributes of the wines
 y=(dataset[:,0]).copy() # the winery that produced the given wine
 
