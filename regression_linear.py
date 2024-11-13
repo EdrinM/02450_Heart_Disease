@@ -19,7 +19,6 @@ y = (dataset[:, 1]).copy()                                          # Alcohol is
 # Feature transformation (mean 0, std deviation 13 for each column)
 scaler = StandardScaler()
 X = scaler.fit_transform(X)
-X *= 13
 
 # Task 2:
 # ----------------------------------------------------------------------------------------------------------------------
@@ -34,6 +33,23 @@ for lam in lambdas:
     # Cross-validation with negative MSE as score
     scores = cross_val_score(model, X, y, scoring='neg_mean_squared_error', cv=kf)
     cv_errors.append(-scores.mean())  # Store mean CV error for current λ
+
+'''
+cv_errors = []
+for lam in lambdas:
+    model = Ridge(alpha=lam)
+    fold_errors = []
+
+    for train_index, test_index in kf.split(X):
+        X_train, X_test = X[train_index], X[test_index]
+        y_train, y_test = y[train_index], y[test_index]
+
+        model.fit(X_train, y_train)
+        y_pred = model.predict(X_test)
+        fold_errors.append(mean_squared_error(y_test, y_pred))
+
+    cv_errors.append(np.mean(fold_errors))
+'''
 
 # Plot the cross-validated generalization error as a function of λ
 plt.figure(figsize=(10, 6))
