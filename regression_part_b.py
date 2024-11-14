@@ -17,18 +17,18 @@ wine_columns = [
 wine_df = pd.read_csv("./Dataset/wine.data", header=None, names=wine_columns)
 
 # Define feature matrix and target variable
-X = wine_df.drop(columns='Alcohol').to_numpy()  # Convert to numpy array for compatibility
-y = wine_df['Alcohol'].to_numpy()               # Convert target to numpy array
+X = wine_df.drop(columns='Alcohol').to_numpy()
+y = wine_df['Alcohol'].to_numpy()
 
 # Define parameters for the models
-lambdas = np.logspace(-4, 4, 50)   # Adjust based on experimentation
-hidden_units = [1, 3, 5, 10, 20]    # Adjust based on experimentation
-K1, K2 = 10, 10  # Two-level cross-validation
+lambdas = np.logspace(-4, 4, 50)
+hidden_units = [1, 3, 5, 10, 20]
+K1, K2 = 10, 10
 
 # Baseline model function
 def baseline_model(y_train, y_test):
     y_pred = np.full(y_test.shape, y_train.mean())
-    return mean_squared_error(y_test, y_pred) / len(y_test)  # Squared loss per observation
+    return mean_squared_error(y_test, y_pred)
 
 # Outer cross-validation
 kf_outer = KFold(n_splits=K1, shuffle=True, random_state=42)
@@ -39,7 +39,7 @@ results = {
     'Baseline E_test': []
 }
 
-# Collect errors for each parameter setting across folds for final plotting
+# Collecting errors for each parameter setting across folds for the final plotting
 all_lambda_errors = {lmbda: [[] for _ in range(K1)] for lmbda in lambdas}
 all_hidden_unit_errors = {h: [[] for _ in range(K1)] for h in hidden_units}
 
@@ -48,7 +48,7 @@ for fold, (train_outer_idx, test_outer_idx) in enumerate(kf_outer.split(X), star
     X_train_outer, X_test_outer = X[train_outer_idx], X[test_outer_idx]
     y_train_outer, y_test_outer = y[train_outer_idx], y[test_outer_idx]
 
-    # Standardize the features
+    # Standardize scaler the features
     scaler = StandardScaler()
     X_train_outer = scaler.fit_transform(X_train_outer)
     X_test_outer = scaler.transform(X_test_outer)
@@ -68,30 +68,24 @@ for fold, (train_outer_idx, test_outer_idx) in enumerate(kf_outer.split(X), star
             ann_model = MLPRegressor(hidden_layer_sizes=(h,), max_iter=20000, random_state=42, tol=1e-4)
             ann_model.fit(X_train_inner, y_train_inner)
             ann_mse = mean_squared_error(y_test_inner, ann_model.predict(X_test_inner))
-            all_hidden_unit_errors[h][fold - 1].append(ann_mse)  # Store error for each fold
+            all_hidden_unit_errors[h][fold - 1].append(ann_mse)
 
             hidden_avg_error = np.mean(all_hidden_unit_errors[h][fold - 1])
             if hidden_avg_error < best_ann_mse:
                 best_ann_mse = hidden_avg_error
                 best_ann_h = h
 
-            #if ann_mse < best_ann_mse:
-                #best_ann_mse, best_ann_h = ann_mse, h
-
         # Regularized linear regression: testing different lambdas
         for lmbda in lambdas:
             linear_model = Ridge(alpha=lmbda)
             linear_model.fit(X_train_inner, y_train_inner)
             linear_mse = mean_squared_error(y_test_inner, linear_model.predict(X_test_inner))
-            all_lambda_errors[lmbda][fold - 1].append(linear_mse)  # Store error for each fold
+            all_lambda_errors[lmbda][fold - 1].append(linear_mse)
 
             lambda_avg_error = np.mean(all_lambda_errors[lmbda][fold - 1])
             if lambda_avg_error < best_linear_mse:
                 best_linear_mse = lambda_avg_error
                 best_lambda = lmbda
-
-            #if linear_mse < best_linear_mse:
-                #best_linear_mse, best_lambda = linear_mse, lmbda
 
     # Outer test fold evaluation with selected parameters
     ann_model_final = MLPRegressor(hidden_layer_sizes=(best_ann_h,), max_iter=20000, random_state=42, tol=1e-4)
@@ -160,3 +154,19 @@ print("\nStatistical Evaluation using Paired t-tests:")
 print(f"Linear Regression vs ANN: p-value = {p_value_lr_ann:.4f}")
 print(f"Linear Regression vs Baseline: p-value = {p_value_lr_baseline:.4f}")
 print(f"ANN vs Baseline: p-value = {p_value_ann_baseline:.4f}")
+
+#which is better
+mean_lr_error = results_df['Linear E_test'].mean()
+mean_ann_error = results_df['ANN E_test'].mean()
+mean_baseline_error = results_df['Baseline E_test'].mean()
+
+# Perform paired t-tests
+_, p_value_lr_ann = ttest_rel(results_df['Linear E_test'], results_df['ANN E_test'])
+_, p_value_lr_baseline = ttest_rel(results_df['Linear E_test'], results_df['Baseline E_test'])
+_, p_value_ann_baseline = ttest_rel(results_df['ANN E_test'], results_df['Baseline E_test'])
+
+# Print the average errors
+print("Average Test Errors:")
+print(f"Linear Regression: {mean_lr_error:.4f}")
+print(f"ANN: {mean_ann_error:.4f}")
+print(f"Baseline: {mean_baseline_error:.4f}")
