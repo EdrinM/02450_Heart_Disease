@@ -3,28 +3,23 @@ import matplotlib.pyplot as plt
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import KFold, cross_val_score
 from sklearn.linear_model import Ridge
-
-
-# Load the dataset into a pandas DataFrame
-columns = ["Class", "Alcohol", "Malic acid", "Ash", "Alcalinity of ash", "Magnesium", "Total phenols",
-           "Flavanoids", "Nonflavanoid phenols", "Proanthocyanins", "Color intensity", "Hue",
-           "OD280/OD315 of diluted wines", "Proline"]
+from sklearn.metrics import mean_squared_error
 
 # Task 1:
 # ----------------------------------------------------------------------------------------------------------------------
 dataset = np.loadtxt(r".\Dataset\wine.data", delimiter=',',dtype=float)
-X = dataset[:, [0] + list(range(2, dataset.shape[1]))].copy()       # Everything except alcohol
-y = (dataset[:, 1]).copy()                                          # Alcohol is the target variable
+X = dataset[:, [0] + list(range(2, dataset.shape[1]))].copy()
+y = (dataset[:, 1]).copy()
 
-# Feature transformation (mean 0, std deviation 13 for each column)
+# Feature transformation (mean 0, std deviation 1 for each column)
 scaler = StandardScaler()
 X = scaler.fit_transform(X)
 
 # Task 2:
 # ----------------------------------------------------------------------------------------------------------------------
 # Regularization with lambda (using Ridge regression with cross-validation)
-lambdas = np.logspace(-4, 4, 50)    # Range of λ values from very small to large
-cv_errors = []                      # Store cross-validation errors for each λ
+lambdas = np.logspace(-4, 4, 50)
+cv_errors = []
 
 kf = KFold(n_splits=10, shuffle=True, random_state=42)  # 10-fold cross-validation
 
@@ -56,9 +51,11 @@ plt.figure(figsize=(10, 6))
 plt.plot(lambdas, cv_errors, marker='o')
 plt.xscale('log')
 plt.xlabel('Regularization parameter λ')
-plt.ylabel('Estimated Generalization Error (MSE)')
-plt.title('Generalization Error as a Function of λ')
+plt.ylabel('Estimated generalization error (MSE)')
+plt.title('Generalization error as a function of λ')
 plt.show()
+
+
 
 # Task 3:
 # ----------------------------------------------------------------------------------------------------------------------
@@ -74,8 +71,8 @@ for i, coef in enumerate(best_model.coef_):
     print(f"Feature {i} has a coefficient of {coef:.3f}")
 
 # Predicting y for a new input x
-example_x = X[0]  # Take an example input from X
-example_x = scaler.transform([example_x]) * 13
+example_x = X[0]
+example_x = scaler.transform([example_x])
 predicted_y = best_model.predict(example_x)
 
 print("Predicted y for example input:", predicted_y)
